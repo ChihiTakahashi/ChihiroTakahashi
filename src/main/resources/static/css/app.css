@@ -3,8 +3,19 @@
   table-layout: fixed;
 }
 
+.app-table td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .text-overflow {
   white-space: nowrap;
+}
+
+.form-control {
+  width: 100% !important;
+  height: auto !important;
 }
 
 /* 詳細 */
@@ -33,15 +44,18 @@ a.btn-link {
 }
 
 /* タブレット */
-@media (max-width: 768px) { 
+@media (max-width: 768px) {
+
   /* 一覧 */
   .for-tablet {
     display: none;
   }
+
   .app-show-container {
     width: 1500px;
     height: 3000px;
   }
+
   span.font-impact {
     font-size: x-large;
   }
@@ -49,14 +63,16 @@ a.btn-link {
 
 /* スマホ */
 @media (max-device-width: 500px) {
+
   /* 一覧 */
   .for-pc.for-tablet {
     display: none;
   }
-  
+
   .app-show-container {
     width: 1500px;
   }
+
   span.font-impact {
     font-size: xx-large;
   }
