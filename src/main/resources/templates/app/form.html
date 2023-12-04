@@ -34,6 +34,11 @@
       <input id="active" name="active" type="checkbox" class="form-check-input" th:field="*{active}" />
       <label for="active" class="form-check-label">Active</label>
     </div>
+    <div class="form-group">
+      <label for="url"></label>
+      <input id="url" name="url" type="hidden" class="form-control" th:field="*{url}"
+        style='height: 200px; width: max-content;' />
+    </div>
 
     <button type="submit" class="btn btn-success">Save</button>
     <a th:href="@{/apps}" class="btn btn-default">Back</a>
