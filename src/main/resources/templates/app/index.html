@@ -34,6 +34,10 @@
         <td>
           <a class="btn btn-primary" th:href="@{/apps/{id}(id = ${app.id})}">Show</a>
           <a class="btn btn-secondary" th:href="@{/apps/{id}/edit(id = ${app.id})}">Edit</a>
+          <br>
+          <form th:action="@{/apps/{id}(id = ${app.id})}" th:method="delete">
+            <button type="submit" class="btn btn-danger">Destroy</button>
+          </form>
         </td>
         <td th:text="${app.active}"></td>
       </tr>
