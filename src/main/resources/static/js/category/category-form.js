@@ -26,7 +26,7 @@ $(document).ready(function () {
       // nameのバリデーション
       if (id === "name") {
         let name = $(this).val();
-        if (name === "" || name.length >= 20) {
+        if (name === "" || name.length > 20) {
           $(this).addClass("is-invalid");
           isValid = false;
         } else {
@@ -50,7 +50,7 @@ $(document).ready(function () {
   }
 
   function isPatternValid(code) {
-    let pattern = /^([A-Z]{3}[0-9]{3})$/;
+    let pattern = /^([A-Z]{3}-[0-9]{3})$/;
     return pattern.test(code);
   }
 });
