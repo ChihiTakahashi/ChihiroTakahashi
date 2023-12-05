@@ -3,7 +3,7 @@ $(document).ready(function () {
   let action = document.getElementById("action").getAttribute("val");
 
   $.ajax({
-    url: "/api/category/" + categoryId,
+    url: "/api/categories/" + categoryId,
     type: "GET",
     dataType: "json",
   })
@@ -16,7 +16,7 @@ $(document).ready(function () {
     })
     .fail(function () {
       // APIコールが失敗した場合の処理
-      console.log("APIコールが失敗しました。");
+      alert("APIコールが失敗しました。");
     });
 
   $("#update-button").click(function () {
@@ -42,7 +42,7 @@ $(document).ready(function () {
       type: "POST",
       dataType: "text",
       contentType: "application/json",
-      data: postData,
+      data: JSON.stringify(postData),
     }).done(function (data) {
       $("#success-message").text(data).show().fadeOut(3000);
     });
