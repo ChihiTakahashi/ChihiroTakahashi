@@ -21,8 +21,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.example.constants.Message;
 import com.example.model.Category;
-import com.example.service.CategoryService;
 import com.example.model.Product;
+import com.example.service.CategoryService;
 import com.example.service.ProductService;
 import com.example.utils.CheckUtil;
 
@@ -74,7 +74,7 @@ public class CategoryController {
 			category = categoryService.save(entity);
 			redirectAttributes.addFlashAttribute("success", Message.MSG_SUCESS_INSERT);
 			redirectAttributes.addAttribute("q", "create");
-			return "redirect:/categories";
+			return "redirect:/categories/" + category.getId() + "/productRelation";
 		} catch (Exception e) {
 			redirectAttributes.addFlashAttribute("error", Message.MSG_ERROR);
 			e.printStackTrace();
