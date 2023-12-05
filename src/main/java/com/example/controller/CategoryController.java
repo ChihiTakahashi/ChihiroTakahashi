@@ -21,8 +21,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.example.constants.Message;
 import com.example.model.Category;
-import com.example.service.CategoryService;
 import com.example.model.Product;
+import com.example.service.CategoryService;
 import com.example.service.ProductService;
 import com.example.utils.CheckUtil;
 
