@@ -20,7 +20,7 @@
     </div>
     <div class="form-group">
       <label for="image_file-lg">Image</label>
-      <input id="image_file-lg" name="image_file" type="file" class="form-control-lg" />
+      <input id="image_file" name="image_file" type="file" class="form-control" />
       <!-- 画像があれば縮小して表示 -->
       <img th:if="${app.image != null && app.image != ''}" th:src="*{image}" th:alt="現在の画像" width="200" height="200" />
       <input id="image" name="image" type="hidden" th:field="*{image}" />
@@ -34,14 +34,12 @@
       <input id="active" name="active" type="checkbox" class="form-check-input" th:field="*{active}" />
       <label for="active" class="form-check-label">Active</label>
     </div>
-    <div class="form-group">
-      <label for="url"></label>
-      <input id="url" name="url" type="hidden" class="form-control" th:field="*{url}"
-        style='height: 200px; width: max-content;' />
-    </div>
+    <label for="url"></label>
+    <input id="url" name="url" type="hidden" th:field="*{url}" style='height: 200px; width: max-content;' />
 
     <button type="submit" class="btn btn-success">Save</button>
     <a th:href="@{/apps}" class="btn btn-default">Back</a>
+
   </form>
   <script>
     window.addEventListener('load', function () {
