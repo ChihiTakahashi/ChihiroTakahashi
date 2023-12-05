@@ -37,7 +37,7 @@
               <div class="btn btn-secondary">
                 <a class="link-light" th:href="@{/categories/{id}/productRelation(id = ${category.id})}"
                   style="text-decoration: none;">商品設定</a>
-                <svg th:title="'現在の紐付け商品:' + ${productNames}" data-bs-toggle="tooltip" data-bs-placement="left"
+                <svg th:title="'現在の紐付け商品:' + ${productNames}" data-bs-toggle="tooltip" data-bs-placement="top"
                   xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
                   class="bi bi-question-circle" viewBox="0 0 16 16">
                   <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
@@ -53,7 +53,7 @@
       </tr>
     </tbody>
   </table>
+  <script src="/js/category/category-index.js"></script>
 </th:block>
 
 </html>
-<script src="/js/category/category-index.js"></script>
