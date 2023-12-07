@@ -1,7 +1,6 @@
 package com.example.model;
 
 import java.io.Serializable;
-import java.lang.String;
 import java.util.Date;
 
 import org.springframework.format.annotation.DateTimeFormat;
@@ -17,6 +16,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -62,6 +62,7 @@ public class TransactionAmount extends TimeEntity implements Serializable {
 	private Boolean hasPaid;
 
 	// メモ
+	@Size(max = 1000, message = "1000文字以内で入力してください")
 	@Column(name = "memo", nullable = false, columnDefinition = "TEXT")
 	private String memo;
 }
