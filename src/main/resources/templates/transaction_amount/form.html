@@ -37,7 +37,9 @@
     </div>
     <div class="form-group">
       <label for="memo">メモ</label>
-      <textarea id="memo" name="memo" class="form-control" th:field="*{memo}"></textarea>
+      <textarea id="memo" name="memo" class="form-control" th:field="*{memo}" maxlength="1000" required></textarea>
+      <span th:if="${#fields.hasErrors('memo')}" th:errors="*{memo}">1000文字以内で入力してください</span>
+      <h1 th:if="${tAmount.id != null}">取引金額 編集</h1>
     </div>
 
     <button type="submit" class="btn btn-success">保存</button>

@@ -32,6 +32,7 @@ import com.example.service.CompanyService;
 import com.example.service.TransactionAmountService;
 
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 
 @Controller
 @RequestMapping("/transactionAmounts")
@@ -66,7 +67,8 @@ public class TransactionAmountController {
 	 * @return
 	 */
 	@GetMapping(value = "/{c_id}/new")
-	public String create(Model model, @ModelAttribute TransactionAmount entity, @PathVariable("c_id") Long company_id) {
+	public String create(Model model, @ModelAttribute TransactionAmount entity,
+			@PathVariable("c_id") Long company_id) {
 		Optional<Company> companyOpt = companyService.findOne(company_id);
 
 		// 取引先情報が存在する場合、取引金額情報に取引先情報をセットする
@@ -90,9 +92,13 @@ public class TransactionAmountController {
 	 * @return
 	 */
 	@PostMapping
-	public String create(@ModelAttribute TransactionAmount entity, BindingResult result,
+	public String create(@Valid @ModelAttribute TransactionAmount entity, BindingResult result,
 			RedirectAttributes redirectAttributes) {
 		TransactionAmount tAmount = null;
+		if (result.hasErrors()) {
+			redirectAttributes.addFlashAttribute("error", Message.MSG_VALIDATE_ERROR);
+			return "redirect:/companies";
+		}
 		try {
 			// 入力内容のバリデーションチェック
 			if (!transactionAmountService.validate(entity)) {
