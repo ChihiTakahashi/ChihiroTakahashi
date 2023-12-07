@@ -1,7 +1,6 @@
 package com.example.model;
 
 import java.io.Serializable;
-import java.lang.String;
 import java.util.List;
 
 import jakarta.persistence.CascadeType;
@@ -13,6 +12,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotEmpty;
 
 // 取引先会社情報テーブル
 @Entity
@@ -27,6 +27,7 @@ public class Company extends TimeEntity implements Serializable {
 	private Long id;
 
 	// 取引先会社名
+	@NotEmpty(message = "会社名を入力してください")
 	@Column(name = "name", nullable = false)
 	private String name;
 

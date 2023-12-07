@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -23,6 +22,8 @@ import com.example.model.Company;
 import com.example.model.TransactionAmount;
 import com.example.service.CompanyService;
 import com.example.service.TransactionAmountService;
+
+import jakarta.validation.Valid;
 
 @Controller
 @RequestMapping("/companies")
@@ -100,8 +101,12 @@ public class CompanyController {
 	 * @return
 	 */
 	@PostMapping
-	public String create(@ModelAttribute Company entity, BindingResult result,
+	public String create(@Valid @ModelAttribute Company entity, BindingResult result,
 			RedirectAttributes redirectAttributes) {
+		if (result.hasErrors()) {
+			System.out.println("エラー発生");
+			return "company/form";
+		}
 		Company company = null;
 		try {
 			company = companyService.save(entity);
@@ -143,8 +148,12 @@ public class CompanyController {
 	 * @return
 	 */
 	@PutMapping
-	public String update(@Validated @ModelAttribute Company entity, BindingResult result,
+	public String update(@Valid @ModelAttribute Company entity, BindingResult result,
 			RedirectAttributes redirectAttributes) {
+		if (result.hasErrors()) {
+			System.out.println("エラー発生");
+			return "company/form";
+		}
 		Company company = null;
 		try {
 			company = companyService.save(entity);
@@ -160,7 +169,7 @@ public class CompanyController {
 	/**
 	 * 取引先情報の削除処理
 	 *
-	 * @param id 取引先ID
+	 * @param id                 取引先ID
 	 * @param redirectAttributes リダイレクト先に値を渡す
 	 * @return
 	 */
