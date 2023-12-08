@@ -1,7 +1,6 @@
 package com.example.model;
 
 import java.io.Serializable;
-import java.lang.String;
 
 import com.example.annotation.UnusedCampaignCode;
 import com.example.enums.CampaignStatus;
@@ -40,6 +39,7 @@ public class Campaign extends TimeEntity implements Serializable {
 	@NotEmpty(message = "キャンペーン名を入力してください。")
 	private String name;
 
+	@NotEmpty(message = "キャンペーンコードを入力してください。")
 	@Column(name = "code", nullable = false)
 	private String code;
 
