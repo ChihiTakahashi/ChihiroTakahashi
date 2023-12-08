@@ -59,18 +59,6 @@ public class ProductService {
 		productRepository.delete(entity);
 	}
 
-	// public List<Object[]> getCategoryIdsForProducts() {
-	// String sql = "SELECT cp.product_id, GROUP_CONCAT(cp.category_id) AS
-	// category_ids " +
-	// "FROM categories_products cp " +
-	// "GROUP BY cp.product_id";
-
-	// List<Object[]> results = entityManager.createNativeQuery(sql,
-	// Object[].class).getResultList();
-
-	// return results;
-	// }
-
 	// 指定された検索条件に一致するエンティティを検索する
 	public List<ProductWithCategoryName> search(Long shopId, ProductSearchForm form) {
 		final CriteriaBuilder builder = entityManager.getCriteriaBuilder();
