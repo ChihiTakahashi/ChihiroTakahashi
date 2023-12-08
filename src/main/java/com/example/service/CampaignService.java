@@ -94,13 +94,6 @@ public class CampaignService {
 				+
 				"VALUES (:name, :code, :from_date, :to_date, :discount_type, :status, :description, :create_at, :update_at)";
 
-		// List<String> valuePlaceholders = new ArrayList<>();
-		// for (Campaign campaign : campaigns) {
-		// valuePlaceholders.add(
-		// "(:name, :code, :from_date, :to_date, :discount_type, :status, :description,
-		// :create_at, :update_at)");
-		// }
-
 		List<MapSqlParameterSource> batchParams = new ArrayList<>();
 
 		for (Campaign campaign : campaigns) {
@@ -127,7 +120,7 @@ public class CampaignService {
 	 * @param nexStatus 更新後ステータス
 	 * @throws Exception
 	 */
-	@Transactional(readOnly = false, rollbackFor = RuntimeException.class)
+	@Transactional(readOnly = false, rollbackFor = Exception.class)
 	public void bulkStatusUpdate(List<Long> idList, CampaignStatus nexStatus) throws Exception {
 		try {
 			idList.forEach(id -> {
@@ -139,7 +132,7 @@ public class CampaignService {
 				campaign.setStatus(nexStatus);
 				campaignRepository.save(campaign);
 			});
-		} catch (RuntimeException e) {
+		} catch (Exception e) {
 			throw new Exception(e.getMessage());
 		}
 	}
