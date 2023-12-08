@@ -1,26 +1,25 @@
 package com.example.service;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.example.enums.CampaignStatus;
 import com.example.enums.DiscountType;
 import com.example.model.Campaign;
 import com.example.repository.CampaignRepository;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.sql.Types;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
 
 @Service
 @Transactional(readOnly = true)
@@ -68,6 +67,7 @@ public class CampaignService {
 		try (BufferedReader br = new BufferedReader(
 				new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
 			String line = br.readLine(); // 1行目はヘッダーなので読み飛ばす
+			List<Campaign> campaigns = new ArrayList<>();
 			// TODO: ここを一括更新処理に変更したい batchInsertメソッドを使用するように
 			while ((line = br.readLine()) != null) {
 				final String[] split = line.replace("\"", "").split(",");
@@ -75,8 +75,9 @@ public class CampaignService {
 						split[0], split[1], split[2], split[3],
 						DiscountType.valueOf(Integer.parseInt(split[4])),
 						CampaignStatus.valueOf(Integer.parseInt(split[5])), split[6]);
-				campaignRepository.save(campaign);
+				campaigns.add(campaign);
 			}
+			batchInsert(campaigns);
 		} catch (IOException e) {
 			throw new RuntimeException("ファイルが読み込めません", e);
 		}
@@ -89,19 +90,34 @@ public class CampaignService {
 	 */
 	@SuppressWarnings("unused")
 	private int[] batchInsert(List<Campaign> campaigns) {
-		String sql = "INSERT INTO campaigns (name, code, from_date, to_date, discount_type, status, description, create_at, update_at)"
-				+ " VALUES(:name, :code, :from_date, :to_date, :discount_type, :status, :description, :create_at, :update_at)";
-		// FIXME: ここでエラーが出る インサート文の問題？
-		return jdbcTemplate.batchUpdate(sql,
-				campaigns.stream()
-						.map(c -> new MapSqlParameterSource()
-								.addValue("name", c.getName(), Types.VARCHAR)
-								.addValue("code", c.getCode(), Types.VARCHAR)
-								.addValue("from_date", c.getFromDate(), Types.VARCHAR)
-								.addValue("discount_type", c.getDiscountType().getId(), Types.TINYINT)
-								.addValue("description", c.getDescription(), Types.VARCHAR)
-								.addValue("create_at", new Date(), Types.TIMESTAMP))
-						.toArray(SqlParameterSource[]::new));
+		String sql = "INSERT INTO campaigns (name, code, from_date, to_date, discount_type, status, description, create_at, update_at) "
+				+
+				"VALUES (:name, :code, :from_date, :to_date, :discount_type, :status, :description, :create_at, :update_at)";
+
+		// List<String> valuePlaceholders = new ArrayList<>();
+		// for (Campaign campaign : campaigns) {
+		// valuePlaceholders.add(
+		// "(:name, :code, :from_date, :to_date, :discount_type, :status, :description,
+		// :create_at, :update_at)");
+		// }
+
+		List<MapSqlParameterSource> batchParams = new ArrayList<>();
+
+		for (Campaign campaign : campaigns) {
+			MapSqlParameterSource params = new MapSqlParameterSource()
+					.addValue("name", campaign.getName())
+					.addValue("code", campaign.getCode())
+					.addValue("from_date", campaign.getFromDate())
+					.addValue("to_date", campaign.getToDate())
+					.addValue("discount_type", campaign.getDiscountType().getId())
+					.addValue("status", campaign.getStatus().getId())
+					.addValue("description", campaign.getDescription())
+					.addValue("create_at", new Date())
+					.addValue("update_at", new Date());
+			batchParams.add(params);
+		}
+		System.out.println("ここ");
+		return jdbcTemplate.batchUpdate(sql, batchParams.toArray(new MapSqlParameterSource[0]));
 	}
 
 	/**
