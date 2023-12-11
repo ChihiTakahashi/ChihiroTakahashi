@@ -44,7 +44,7 @@ public class ProductForm {
 	private Integer height;
 
 	@NotNull(message = "値段を入力してください。")
-	private Integer price;
+	private Double price;
 
 	@NotNull(message = "税率を選択してください。")
 	private Integer rate = TaxType.RATE_10;
@@ -55,7 +55,6 @@ public class ProductForm {
 	@NotNull(message = "端数処理を選択してください。")
 	private String rounding = TaxType.ROUND;
 
-
 	public ProductForm(Product product) {
 		this.setId(product.getId());
 		this.setShopId(product.getShopId());
@@ -64,12 +63,13 @@ public class ProductForm {
 		// 紐づくカテゴリIDのリストを作成
 		List<CategoryProduct> categoryProducts = product.getCategoryProducts();
 		if (categoryProducts != null) {
-			List<Long> categoryIds = categoryProducts.stream().map(categoryProduct -> categoryProduct.getCategoryId()).collect(Collectors.toList());
+			List<Long> categoryIds = categoryProducts.stream().map(categoryProduct -> categoryProduct.getCategoryId())
+					.collect(Collectors.toList());
 			this.setCategoryIds(categoryIds);
 		}
 		this.setWeight(product.getWeight());
 		this.setHeight(product.getHeight());
-		this.setPrice(product.getPrice());
+		this.setPrice(product.getPrice().doubleValue());
 		var tax = TaxType.get(product.getTaxType());
 		this.setRate(tax.rate);
 		this.setTaxIncluded(tax.taxIncluded);
