@@ -22,6 +22,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
@@ -68,6 +69,9 @@ public class ProductService {
 		Join<Product, CategoryProduct> categoryProductJoin = root.joinList("categoryProducts", JoinType.LEFT);
 		Join<CategoryProduct, Category> categoryJoin = categoryProductJoin.join("category", JoinType.LEFT);
 
+		Expression<String> categoriesConcatenated = builder.function(
+				"GROUP_CONCAT", String.class, categoryJoin.get("name"));
+
 		query.multiselect(
 				root.get("id"),
 				root.get("code"),
@@ -75,7 +79,9 @@ public class ProductService {
 				root.get("weight"),
 				root.get("height"),
 				root.get("price"),
-				categoryJoin.get("name").alias("categoryName")).where(builder.equal(root.get("shopId"), shopId));
+				builder.coalesce(categoriesConcatenated, "").alias("categoryNames"))
+				.where(builder.equal(root.get("shopId"), shopId))
+				.groupBy(root.get("id"));
 
 		List<Predicate> predicates = new ArrayList<>();
 
