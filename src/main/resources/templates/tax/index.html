@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layout/layout}">
+<th:block layout:fragment="content">
+  <h1>List Tax</h1>
+  <hr />
+  <a th:href="@{/taxes/new}">New Tax</a><br /><br />
+
+  <table class="table app-table">
+    <thead>
+      <tr>
+        <th>Tax(%)</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="tax : ${listTax}">
+        <td th:text="${tax.tax}"></td>
+        <td>
+          <a class="btn btn-primary" th:href="@{/taxes/{id}(id = ${tax.id})}">Show</a>
+          <form th:action="@{/taxes/{id}(id = ${tax.id})}" th:method="delete">
+            <button type="submit" class="btn btn-danger">Destroy</button>
+          </form>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <link th:href="@{/css/app.css}" type="text/css" rel="stylesheet" />
+</th:block>
+
+</html>

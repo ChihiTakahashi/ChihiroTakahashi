@@ -55,6 +55,12 @@ public class ProductForm {
 	@NotNull(message = "端数処理を選択してください。")
 	private String rounding = TaxType.ROUND;
 
+	private Long taxType;
+
+	public void setTaxType(Long taxType) {
+		this.taxType = taxType;
+	}
+
 	public ProductForm(Product product) {
 		this.setId(product.getId());
 		this.setShopId(product.getShopId());
@@ -76,8 +82,4 @@ public class ProductForm {
 		this.setRounding(tax.rounding);
 	}
 
-	public Integer getTaxType() {
-		var tax = TaxType.get(rate, taxIncluded, rounding);
-		return tax.id;
-	}
 }
