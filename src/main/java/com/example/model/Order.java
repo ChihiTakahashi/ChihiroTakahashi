@@ -1,7 +1,6 @@
 package com.example.model;
 
 import java.io.Serializable;
-import java.lang.String;
 import java.util.List;
 
 import com.example.enums.OrderStatus;
@@ -75,6 +74,8 @@ public class Order extends TimeEntity implements Serializable {
 	@JoinColumn(name = "order_id")
 	private List<OrderPayment> orderPayments;
 
+	public Order() {}
+
 	/**
 	 * 支払い方法名を取得する
 	 */
@@ -106,6 +107,24 @@ public class Order extends TimeEntity implements Serializable {
 			return value.getName();
 		}
 		return "";
+	}
+
+	public Order(Long id, Integer customerId, Double discount, Double shipping, Double tax, Double total,
+			Double grandTotal,
+			String status, String paymentMethod, String paymentStatus, Double paid, String note) {
+		this.id = id;
+		this.customerId = customerId;
+		this.discount = discount;
+		this.shipping = shipping;
+		this.tax = tax;
+		this.total = total;
+		this.grandTotal = grandTotal;
+		this.status = status;
+		this.paymentMethod = paymentMethod;
+		this.paymentStatus = paymentStatus;
+		this.paid = paid;
+		this.note = note;
+
 	}
 
 }
