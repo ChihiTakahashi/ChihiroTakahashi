@@ -9,15 +9,20 @@
   <div class="mb-4">
     <div class="row">
       <!-- CSVの読み込み -->
-      <form class="row col-6" th:action="@{/orders/shipping}" method="post" enctype="multipart/form-data">
+      <form class="row col-6" th:action="@{/orders/shipping/upload_file}" method="post" enctype="multipart/form-data">
         <div class="input-group">
           <input class="form-control" type="file" id="file" name="file" accept=".csv" />
-          <button type="submit" class="btn btn-primary">読込</button>
+          <button type="submit" class="btn btn-primary">発送済み受注取込</button>
         </div>
       </form>
-      <!-- テンプレートCSVのダウンロード -->
+      <!-- 未発送CSVのダウンロード -->
       <form th:method="post" th:action="@{/orders/shipping/download}" enctype="multipart/form-data" class="col-4">
-        <input type="submit" value="テンプレートをダウンロード" class="btn btn-warning" />
+        <input type="submit" value="未発送受注ダウンロード" class="btn btn-warning" />
+      </form>
+      <!-- テンプレートCSVのダウンロード -->
+      <form th:method="post" th:action="@{/orders/shipping/template_download}" enctype="multipart/form-data"
+        class="col-4">
+        <input type="submit" value="テンプレートダウンロード" class="btn btn-warning" />
       </form>
     </div>
   </div>
@@ -28,9 +33,9 @@
   </div>
 
   <!-- CSVの読み込み内容を表示する -->
-  <div th:if="${orderShippingData}">
-    <!-- チェックを入れたデータのみ出荷済みに更新する -->
-    <form th:action="@{/orders/shipping}" th:method="'put'" th:object="${orderShippingData}">
+  <!-- <div th:if="${orderShippingData}"> -->
+  <!-- チェックを入れたデータのみ出荷済みに更新する -->
+  <!-- <form th:action="@{/orders/shipping}" th:method="'put'" th:object="${orderShippingData}">
       <button type="submit" class="btn btn-success">出荷情報更新</button>
       <table class="table">
         <thead>
@@ -76,8 +81,57 @@
           </tr>
         </tbody>
       </table>
-    </form>
-  </div>
+    </form> -->
+  <!-- </div> -->
+  <table class="table">
+    <thead>
+      <tr>
+        <th>顧客ID</th>
+        <th>商品 / 個数</th>
+        <th>値引き</th>
+        <th>配送料</th>
+        <th>税額</th>
+        <th>小計</th>
+        <th>総合計</th>
+        <th>状態</th>
+        <th>支払い方法</th>
+        <th>支払い状態</th>
+        <th>支払い済み額</th>
+        <th>メモ</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="order : ${listOrder}">
+        <td th:text="${order.customerId}"></td>
+        <td>
+          <th:block th:each="orderProduct : ${order.orderProducts}">
+            <div>
+              <span th:text="${orderProduct.name}"></span> /
+              <span th:text="${orderProduct.quantity}"></span>
+            </div>
+          </th:block>
+        </td>
+        <td th:text="${order.discount}"></td>
+        <td th:text="${order.shipping}"></td>
+        <td th:text="${order.tax}"></td>
+        <td th:text="${order.total}"></td>
+        <td th:text="${order.grandTotal}"></td>
+        <td th:text="${order.getStatusName()}"></td>
+        <td th:text="${order.getPaymentMethodName()}"></td>
+        <td th:text="${order.getPaymentStatusName()}"></td>
+        <td th:text="${order.paid}"></td>
+        <td th:text="${order.note}"></td>
+        <td>
+          <a class="btn btn-primary" th:href="@{/orders/{id}(id = ${order.id})}">詳細</a>
+          <a class="btn btn-secondary" th:href="@{/orders/{id}/edit(id = ${order.id})}">編集</a>
+          <form class="d-inline" th:action="@{/orders/{id}(id = ${order.id})}" th:method="delete">
+            <button class="btn btn-danger" type="submit">削除</button>
+          </form>
+        </td>
+      </tr>
+    </tbody>
+  </table>
 </th:block>
 
 </html>

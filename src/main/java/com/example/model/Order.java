@@ -1,7 +1,7 @@
 package com.example.model;
 
 import java.io.Serializable;
-import java.lang.String;
+import java.time.LocalDate;
 import java.util.List;
 
 import com.example.enums.OrderStatus;
@@ -67,6 +67,21 @@ public class Order extends TimeEntity implements Serializable {
 	@Column(name = "note", nullable = false, columnDefinition = "TEXT")
 	private String note;
 
+	@Column(name = "shipping_code", nullable = false)
+	private String shippingCode;
+
+	@Column(name = "shipping_date", nullable = true)
+	private LocalDate shippingDate;
+
+	@Column(name = "deliveryDate", nullable = true)
+	private LocalDate deliveryDate;
+
+	@Column(name = "deliveryTimezone", nullable = true)
+	private String deliveryTimezone;
+
+	@Column(name = "order_id", nullable = true)
+	private Integer orderId;
+
 	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	@JoinColumn(name = "order_id")
 	private List<OrderProduct> orderProducts;
@@ -74,6 +89,8 @@ public class Order extends TimeEntity implements Serializable {
 	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	@JoinColumn(name = "order_id")
 	private List<OrderPayment> orderPayments;
+
+	public Order() {}
 
 	/**
 	 * 支払い方法名を取得する
@@ -106,6 +123,18 @@ public class Order extends TimeEntity implements Serializable {
 			return value.getName();
 		}
 		return "";
+	}
+
+	public Order(Long id, String shippingCode, LocalDate shippingDate, LocalDate deliveryDate,
+			String deliveryTimezone, String status,
+			String paymentStatus) {
+		this.id = id;
+		this.shippingCode = shippingCode;
+		this.shippingDate = shippingDate;
+		this.deliveryDate = deliveryDate;
+		this.deliveryTimezone = deliveryTimezone;
+		this.status = status;
+		this.paymentStatus = paymentStatus;
 	}
 
 }
