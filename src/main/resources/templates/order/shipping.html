@@ -15,9 +15,14 @@
           <button type="submit" class="btn btn-primary">発送済み受注取込</button>
         </div>
       </form>
-      <!-- テンプレートCSVのダウンロード -->
+      <!-- 未発送CSVのダウンロード -->
       <form th:method="post" th:action="@{/orders/shipping/download}" enctype="multipart/form-data" class="col-4">
-        <input type="submit" value="未発送受注をダウンロード" class="btn btn-warning" />
+        <input type="submit" value="未発送受注ダウンロード" class="btn btn-warning" />
+      </form>
+      <!-- テンプレートCSVのダウンロード -->
+      <form th:method="post" th:action="@{/orders/shipping/template_download}" enctype="multipart/form-data"
+        class="col-4">
+        <input type="submit" value="テンプレートダウンロード" class="btn btn-warning" />
       </form>
     </div>
   </div>
@@ -28,9 +33,9 @@
   </div>
 
   <!-- CSVの読み込み内容を表示する -->
-  <div th:if="${orderShippingData}">
-    <!-- チェックを入れたデータのみ出荷済みに更新する -->
-    <form th:action="@{/orders/shipping}" th:method="'put'" th:object="${orderShippingData}">
+  <!-- <div th:if="${orderShippingData}"> -->
+  <!-- チェックを入れたデータのみ出荷済みに更新する -->
+  <!-- <form th:action="@{/orders/shipping}" th:method="'put'" th:object="${orderShippingData}">
       <button type="submit" class="btn btn-success">出荷情報更新</button>
       <table class="table">
         <thead>
@@ -76,8 +81,8 @@
           </tr>
         </tbody>
       </table>
-    </form>
-  </div>
+    </form> -->
+  <!-- </div> -->
   <table class="table">
     <thead>
       <tr>

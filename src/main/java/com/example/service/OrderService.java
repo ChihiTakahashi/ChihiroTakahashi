@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -168,7 +169,7 @@ public class OrderService {
 	 * @throws IOException
 	 */
 	@Transactional
-	public void importCSV(MultipartFile file) throws IOException {
+	public List<Order> importCSV(MultipartFile file) throws IOException {
 		try (BufferedReader br = new BufferedReader(
 				new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
 			String line = br.readLine(); // 1行目はヘッダーなので読み飛ばす
@@ -176,74 +177,84 @@ public class OrderService {
 			while ((line = br.readLine()) != null) {
 				final String[] split = line.replace("\"", "").split(",");
 				Order order;
-				Long orderId = Long.valueOf(split[0]);
-				Optional<Order> existingOrder = orderRepository.findById(orderId);
-				order = existingOrder.get();
-				if ((split[9]).equals("paid")) {
-					order.setId(Long.valueOf(split[0]));
-					order.setCustomerId(Integer.valueOf(split[1]));
-					order.setDiscount(Double.valueOf(split[2]));
-					order.setShipping(Double.valueOf(split[3]));
-					order.setTax(Double.valueOf(split[4]));
-					order.setTotal(Double.valueOf(split[5]));
-					order.setGrandTotal(Double.valueOf(split[6]));
-					order.setStatus("completed");
-					order.setPaymentMethod(split[8]);
-					order.setPaymentStatus(split[9]);
-					order.setPaid(Double.valueOf(split[10]));
-					order.setNote(split[11]);
+				Optional<Order> existingOrder = orderRepository.findById(Long.valueOf(split[0]));
+				// order = existingOrder.get();
+				if (existingOrder.isPresent()) {
+					// すでにデータが存在する場合は更新
+					order = existingOrder.get();
+					updateOrderFromCSV(order, split);
+					orders.add(order);
 				} else {
-					order.setId(Long.valueOf(split[0]));
-					order.setCustomerId(Integer.valueOf(split[1]));
-					order.setDiscount(Double.valueOf(split[2]));
-					order.setShipping(Double.valueOf(split[3]));
-					order.setTax(Double.valueOf(split[4]));
-					order.setTotal(Double.valueOf(split[5]));
-					order.setGrandTotal(Double.valueOf(split[6]));
-					order.setStatus("shipping");
-					order.setPaymentMethod(split[8]);
-					order.setPaymentStatus(split[9]);
-					order.setPaid(Double.valueOf(split[10]));
-					order.setNote(split[11]);
+					// データが存在しない場合は新規作成
+					order = createOrderFromCSV(split);
+					orders.add(order);
 				}
-
-				// if ("paid".equals(split[8])) {
-				// order = new Order(
-				// Long.valueOf(split[0]),
-				// Integer.valueOf(split[1]),
-				// Double.parseDouble(split[2]),
-				// Double.parseDouble(split[3]),
-				// Double.parseDouble(split[4]),
-				// Double.parseDouble(split[5]),
-				// Double.parseDouble(split[6]),
-				// "completed",
-				// (split[8]),
-				// (split[9]),
-				// Double.parseDouble(split[10]),
-				// split[11]);
+				// Integer customerId = existingOrder.map(Order::getCustomerId).orElse(null);
+				// if ((split[6]).equals("paid")) {
+				// order.setId(Long.valueOf(split[0]));
+				// order.setShippingCode(split[1]);
+				// order.setShippingDate(LocalDate.parse(split[2]));
+				// order.setDeliveryDate(LocalDate.parse(split[3]));
+				// order.setDeliveryTimezone(split[4]);
+				// order.setStatus("completed");
+				// order.setPaymentStatus(split[6]);
+				// order.setCustomerId(customerId);
 				// orders.add(order);
 				// } else {
-				// order = new Order(
-				// Long.valueOf(split[0]),
-				// Integer.valueOf(split[1]),
-				// Double.parseDouble(split[2]),
-				// Double.parseDouble(split[3]),
-				// Double.parseDouble(split[4]),
-				// Double.parseDouble(split[5]),
-				// Double.parseDouble(split[6]),
-				// "shipping",
-				// (split[8]),
-				// (split[9]),
-				// Double.parseDouble(split[10]),
-				// split[11]);
+				// order.setId(Long.valueOf(split[0]));
+				// order.setShippingCode(split[1]);
+				// order.setShippingDate(LocalDate.parse(split[2]));
+				// order.setDeliveryDate(LocalDate.parse(split[3]));
+				// order.setDeliveryTimezone(split[4]);
+				// order.setStatus("shipping");
+				// order.setPaymentStatus(split[6]);
+				// order.setCustomerId(customerId);
 				// orders.add(order);
 				// }
-
 			}
 			batchInsert(orders);
+			return orders;
 		} catch (IOException e) {
 			throw new RuntimeException("ファイルが読み込めません", e);
 		}
+	}
+
+	private void updateOrderFromCSV(Order order, String[] split) {
+		// 変更がある場合だけデータを更新
+		if ((split[6]).equals("paid")) {
+			order.setId(Long.valueOf(split[0]));
+			order.setShippingCode(split[1]);
+			order.setShippingDate(LocalDate.parse(split[2]));
+			order.setDeliveryDate(LocalDate.parse(split[3]));
+			order.setDeliveryTimezone(split[4]);
+			order.setStatus("completed");
+			order.setPaymentStatus(split[6]);
+		} else {
+			order.setId(Long.valueOf(split[0]));
+			order.setShippingCode(split[1]);
+			order.setShippingDate(LocalDate.parse(split[2]));
+			order.setDeliveryDate(LocalDate.parse(split[3]));
+			order.setDeliveryTimezone(split[4]);
+			order.setStatus("shipping");
+			order.setPaymentStatus(split[6]);
+		}
+	}
+
+	private Order createOrderFromCSV(String[] split) {
+		Order order = new Order();
+		order.setId(Long.valueOf(split[0]));
+		order.setShippingCode(split[1]);
+		order.setShippingDate(LocalDate.parse(split[2]));
+		order.setDeliveryDate(LocalDate.parse(split[3]));
+		order.setDeliveryTimezone(split[4]);
+		if ((split[6]).equals("paid")) {
+			order.setStatus("completed");
+		} else {
+			order.setStatus("shipping");
+		}
+		order.setPaymentStatus(split[6]);
+
+		return order;
 	}
 
 	/**
@@ -253,26 +264,21 @@ public class OrderService {
 	 */
 	@SuppressWarnings("unused")
 	private int[] batchInsert(List<Order> orders) {
-		String sql = "INSERT INTO orders (id, customer_id, discount, shipping, tax, total, grand_total, status, payment_method, payment_status, paid, note, create_at, update_at) "
+		String sql = "INSERT INTO orders (id, shipping_code, shipping_date, delivery_date, delivery_timezone, status, payment_status, create_at, update_at) "
 				+
-				"VALUES (:id, :customer_id, :discount, :shipping, :tax, :total, :grand_total, :status, :payment_method, :payment_status, :paid, :note, :create_at, :update_at)";
+				"VALUES (:id, :shipping_code, :shipping_date, :delivery_date, :delivery_timezone, :status, :payment_status, :create_at, :update_at)";
 
 		List<MapSqlParameterSource> batchParams = new ArrayList<>();
 
 		for (Order order : orders) {
 			MapSqlParameterSource params = new MapSqlParameterSource()
 					.addValue("id", order.getId())
-					.addValue("customer_id", order.getCustomerId())
-					.addValue("discount", order.getDiscount())
-					.addValue("shipping", order.getShipping())
-					.addValue("tax", order.getTax())
-					.addValue("total", order.getTotal())
-					.addValue("grand_total", order.getGrandTotal())
+					.addValue("shipping_code", order.getShippingCode())
+					.addValue("shipping_date", order.getShippingDate())
+					.addValue("delivery_date", order.getDeliveryDate())
+					.addValue("delivery_timezone", order.getDeliveryTimezone())
 					.addValue("status", order.getStatus())
-					.addValue("payment_method", order.getPaymentMethod())
 					.addValue("payment_status", order.getPaymentStatus())
-					.addValue("paid", order.getPaid())
-					.addValue("note", order.getNote())
 					.addValue("create_at", new Date())
 					.addValue("update_at", new Date());
 			batchParams.add(params);

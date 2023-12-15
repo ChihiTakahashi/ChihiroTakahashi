@@ -3,12 +3,16 @@ package com.example.controller;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.hibernate.service.spi.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -146,8 +150,10 @@ public class OrderController {
 
 	@GetMapping("/shipping")
 	public String indexOrders(Model model) {
-		List<Order> notShipped = orderService.findByStatus("ordered");
-		model.addAttribute("listOrder", notShipped);
+		List<Order> all = orderService.findAll();
+		model.addAttribute("listOrder", all);
+		// List<Order> orderShippingData = orderService.findByStatus("ordered");
+		// model.addAttribute("orderShippingData", orderShippingData);
 		return "order/shipping";
 	}
 
@@ -172,6 +178,8 @@ public class OrderController {
 			return "redirect:/orders/shipping";
 		}
 		try {
+			List<Order> orderShippingData = orderService.importCSV(uploadFile);
+			redirectAttributes.addFlashAttribute("orderShippingData", orderShippingData);
 			orderService.importCSV(uploadFile);
 		} catch (Throwable e) {
 			redirectAttributes.addFlashAttribute("error", e.getMessage());
@@ -184,6 +192,31 @@ public class OrderController {
 
 	/**
 	 * CSVテンプレートダウンロード処理
+	 *
+	 * @param response
+	 * @param redirectAttributes
+	 * @return
+	 */
+	@PostMapping("/shipping/template_download")
+	public String downloadTemplate(HttpServletResponse response, RedirectAttributes redirectAttributes) {
+		try (OutputStream os = response.getOutputStream();) {
+			Path filePath = new ClassPathResource("static/templates/order.csv").getFile().toPath();
+			byte[] fb1 = Files.readAllBytes(filePath);
+			String attachment = "attachment; filename=orderTemplate_" + new Date().getTime() + ".csv";
+
+			response.setContentType("application/octet-stream");
+			response.setHeader("Content-Disposition", attachment);
+			response.setContentLength(fb1.length);
+			os.write(fb1);
+			os.flush();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	/**
+	 * CSV未発送受注ダウンロード処理
 	 *
 	 * @param response
 	 * @param redirectAttributes
@@ -208,22 +241,17 @@ public class OrderController {
 
 	// データベースをCSVに変換
 	public String convertToCSV(List<Order> orders) {
-		String header = "id,customer_id,discount,shipping,tax,total,grand_total,status,payment_method,payment_status,paid,note,create_at,update_at";
+		String header = "order_id,shipping_code,shipping_date,delivery_date,delivery_timezone,status,payment_status";
 
 		String data = orders.stream()
 				.map(order -> String.join(",",
 						String.valueOf(order.getId()),
-						String.valueOf(order.getCustomerId()),
-						String.valueOf(order.getDiscount()),
-						String.valueOf(order.getShipping()),
-						String.valueOf(order.getTax()),
-						String.valueOf(order.getTotal()),
-						String.valueOf(order.getGrandTotal()),
-						order.getStatus(),
-						order.getPaymentMethod(),
-						order.getPaymentStatus(),
-						String.valueOf(order.getPaid()),
-						order.getNote(),
+						String.valueOf(order.getShippingCode()),
+						String.valueOf(order.getShippingDate()),
+						String.valueOf(order.getDeliveryDate()),
+						String.valueOf(order.getDeliveryTimezone()),
+						String.valueOf(order.getStatus()),
+						String.valueOf(order.getPaymentStatus()),
 						String.valueOf(order.getCreateAt()),
 						String.valueOf(order.getUpdateAt())))
 				.collect(Collectors.joining("\n"));
