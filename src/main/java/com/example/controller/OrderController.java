@@ -55,18 +55,25 @@ public class OrderController {
 	List<Order> orderShippingData;
 	List<OrderDeliveries> orderDeliveries;
 
-	// @ModelAttribute("orderShippingForm")
-	// public OrderShippingList getOrderShippingForm() {
-	// OrderShippingList form = new OrderShippingList();
-	// // もし初期データが必要な場合はここで設定する
-	// return form;
-	// }
-
 	@GetMapping
 	public String index(Model model) {
 		List<Order> all = orderService.findAll();
 		model.addAttribute("listOrder", all);
 		return "order/index";
+	}
+
+	// 入金ページ表示
+	@GetMapping("/payments")
+	public String indexPayments(Model model, HttpSession session) {
+		List<Order> all = orderService.findAll();
+		model.addAttribute("listOrder", all);
+		// セッションからエラーメッセージを取得してモデルに追加
+		List<String> validationErrors = (List<String>)session.getAttribute("validationErrors");
+		if (validationErrors != null && !validationErrors.isEmpty()) {
+			model.addAttribute("validationErrors", validationErrors);
+			session.removeAttribute("validationErrors"); // 不要になったエラーメッセージはセッションから削除
+		}
+		return "order/payments";
 	}
 
 	@GetMapping("/{id}")
@@ -159,6 +166,39 @@ public class OrderController {
 			e.printStackTrace();
 			return "redirect:/orders";
 		}
+	}
+
+	/**
+	 * 入金用CSVインポート処理
+	 *
+	 * @param uploadFile
+	 * @param redirectAttributes
+	 * @return
+	 */
+	@PostMapping("/payments/upload_file")
+	public String uploadFile(@RequestParam("file") MultipartFile uploadFile, RedirectAttributes redirectAttributes,
+			HttpSession session)
+			throws IOException {
+
+		if (uploadFile.isEmpty()) {
+			// ファイルが存在しない場合
+			redirectAttributes.addFlashAttribute("error", "ファイルを選択してください。");
+			return "redirect:/orders/payments";
+		}
+		if (!"text/csv".equals(uploadFile.getContentType())) {
+			// CSVファイル以外の場合
+			redirectAttributes.addFlashAttribute("error", "CSVファイルを選択してください。");
+			return "redirect:/orders/payments";
+		}
+		List<String> validationErrors = orderService.importPaymentCSV(uploadFile);
+
+		if (!validationErrors.isEmpty()) {
+			// バリデーションエラーがあればエラーメッセージをモデルに追加
+			session.setAttribute("validationErrors", validationErrors);
+			return "redirect:/orders/payments";
+		}
+
+		return "redirect:/orders/payments";
 	}
 
 	@GetMapping("/shipping")
