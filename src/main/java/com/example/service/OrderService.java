@@ -4,14 +4,14 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,9 +21,12 @@ import com.example.constants.TaxType;
 import com.example.enums.OrderStatus;
 import com.example.enums.PaymentStatus;
 import com.example.form.OrderForm;
+import com.example.form.OrderShippingList;
 import com.example.model.Order;
+import com.example.model.OrderDeliveries;
 import com.example.model.OrderPayment;
 import com.example.model.OrderProduct;
+import com.example.repository.OrderDeliveriesRepository;
 import com.example.repository.OrderRepository;
 import com.example.repository.ProductRepository;
 
@@ -36,6 +39,9 @@ public class OrderService {
 
 	@Autowired
 	private ProductRepository productRepository;
+
+	@Autowired
+	private OrderDeliveriesRepository orderDeliveriesRepository;
 
 	private final NamedParameterJdbcTemplate jdbcTemplate;
 
@@ -168,122 +174,187 @@ public class OrderService {
 	 * @param file
 	 * @throws IOException
 	 */
+	// インポートしたCSVに合致するオーダー情報をList<Order>形式で返す
 	@Transactional
 	public List<Order> importCSV(MultipartFile file) throws IOException {
+		List<Order> orders = new ArrayList<>();
 		try (BufferedReader br = new BufferedReader(
 				new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
 			String line = br.readLine(); // 1行目はヘッダーなので読み飛ばす
-			List<Order> orders = new ArrayList<>();
+
 			while ((line = br.readLine()) != null) {
 				final String[] split = line.replace("\"", "").split(",");
-				Order order;
-				Optional<Order> existingOrder = orderRepository.findById(Long.valueOf(split[0]));
-				// order = existingOrder.get();
-				if (existingOrder.isPresent()) {
-					// すでにデータが存在する場合は更新
-					order = existingOrder.get();
-					updateOrderFromCSV(order, split);
-					orders.add(order);
-				} else {
-					// データが存在しない場合は新規作成
-					order = createOrderFromCSV(split);
-					orders.add(order);
+
+				// CSV から order_id を取得
+				Long orderId = Long.valueOf(split[0]);
+
+				// orders テーブルからデータを取得する
+				Order orderData = orderRepository.findById(orderId).orElse(null);
+
+				// 取得したデータを orders リストに追加
+				if (orderData != null) {
+					orders.add(orderData);
 				}
-				// Integer customerId = existingOrder.map(Order::getCustomerId).orElse(null);
-				// if ((split[6]).equals("paid")) {
-				// order.setId(Long.valueOf(split[0]));
-				// order.setShippingCode(split[1]);
-				// order.setShippingDate(LocalDate.parse(split[2]));
-				// order.setDeliveryDate(LocalDate.parse(split[3]));
-				// order.setDeliveryTimezone(split[4]);
-				// order.setStatus("completed");
-				// order.setPaymentStatus(split[6]);
-				// order.setCustomerId(customerId);
-				// orders.add(order);
-				// } else {
-				// order.setId(Long.valueOf(split[0]));
-				// order.setShippingCode(split[1]);
-				// order.setShippingDate(LocalDate.parse(split[2]));
-				// order.setDeliveryDate(LocalDate.parse(split[3]));
-				// order.setDeliveryTimezone(split[4]);
-				// order.setStatus("shipping");
-				// order.setPaymentStatus(split[6]);
-				// order.setCustomerId(customerId);
-				// orders.add(order);
-				// }
 			}
-			batchInsert(orders);
 			return orders;
 		} catch (IOException e) {
 			throw new RuntimeException("ファイルが読み込めません", e);
 		}
 	}
 
-	private void updateOrderFromCSV(Order order, String[] split) {
-		// 変更がある場合だけデータを更新
-		if ((split[6]).equals("paid")) {
-			order.setId(Long.valueOf(split[0]));
-			order.setShippingCode(split[1]);
-			order.setShippingDate(LocalDate.parse(split[2]));
-			order.setDeliveryDate(LocalDate.parse(split[3]));
-			order.setDeliveryTimezone(split[4]);
-			order.setStatus("completed");
-			order.setPaymentStatus(split[6]);
+	// インポートしたcsvをフォームに格納
+	@Transactional
+	public List<OrderShippingList> importCSVyoForm(MultipartFile file) throws IOException {
+		List<OrderShippingList> orderShippingList = new ArrayList<>();
+
+		try (BufferedReader br = new BufferedReader(
+				new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
+			String line = br.readLine(); // 1行目はヘッダーなので読み飛ばす
+
+			while ((line = br.readLine()) != null) {
+				final String[] split = line.replace("\"", "").split(",");
+				// CSVデータをOrderShippingListに変換してリストに追加
+				OrderShippingList shippingList = createOrderShippingListFromCSV(split);
+				orderShippingList.add(shippingList);
+			}
+		} catch (IOException e) {
+			throw new RuntimeException("ファイルが読み込めません", e);
+		}
+		return orderShippingList;
+	}
+
+	// CSVデータをOrderShippingListに変換するメソッド
+	private OrderShippingList createOrderShippingListFromCSV(String[] split) {
+		OrderShippingList orderShippingList = new OrderShippingList();
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+		// CSVのデータをOrderShippingListにセット
+		orderShippingList.setChecked(false); // チェックボックスの初期値はfalse（変更可能）
+		orderShippingList.setOrderId(Long.valueOf(split[0]));
+		orderShippingList.setShippingCode(split[1]);
+
+		try {
+			Date shippingDate = dateFormat.parse(split[2]);
+			Date deliveryDate = dateFormat.parse(split[3]);
+			orderShippingList.setShippingDate(shippingDate);
+			orderShippingList.setDeliveryDate(deliveryDate);
+		} catch (ParseException e) {
+			e.printStackTrace(); // 適切なエラーハンドリングが必要
+		}
+
+		orderShippingList.setDeliveryTimezone(split[4]);
+		orderShippingList.setUploadStatus(null); // 初期値はnull（変更可能）
+
+		return orderShippingList;
+	}
+
+	// インポートしたCSVをOrderDeliveriesのリストに変換して返す
+	@Transactional
+	public List<OrderDeliveries> importOrderDeliveriesCSV(MultipartFile file) throws IOException {
+		List<OrderDeliveries> orderDelivery = new ArrayList<>();
+		List<String> validationErrors = new ArrayList<>();
+		try (BufferedReader br = new BufferedReader(
+				new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
+			String line = br.readLine(); // 1行目はヘッダーなので読み飛ばす
+			while ((line = br.readLine()) != null) {
+				final String[] split = line.replace("\"", "").split(",");
+				SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+				Date date1 = null;
+				Date date2 = null;
+				OrderDeliveries orderDeliveries = new OrderDeliveries();
+				try {
+					date1 = dateFormat.parse(split[2]);
+					date2 = dateFormat.parse(split[3]);
+				} catch (ParseException e) {
+					e.printStackTrace();
+				}
+				orderDeliveries.setOrderId(Long.valueOf(split[0]));
+				orderDeliveries.setShippingCode(split[1]);
+				orderDeliveries.setShippingDate(date1);
+				orderDeliveries.setDeliveryDate(date2);
+				orderDeliveries.setDeliveryTimezone(split[4]);
+				orderDelivery.add(orderDeliveries);
+			}
+		} catch (IOException e) {
+			throw new RuntimeException("ファイルが読み込めません", e);
+		}
+		return orderDelivery;
+	}
+
+	// バリデーションチェック
+	@Transactional
+	public List<String> validate(MultipartFile file) throws IOException {
+		List<String> validationErrors = new ArrayList<>();
+		try (BufferedReader br = new BufferedReader(
+				new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
+			String line = br.readLine(); // 1行目はヘッダーなので読み飛ばす
+			while ((line = br.readLine()) != null) {
+				final String[] split = line.replace("\"", "").split(",");
+				SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+				Date date1 = null;
+				Date date2 = null;
+				// CSVの項目が空の場合にエラーとする
+				if (split.length < 5 || split[0].isEmpty() || split[1].isEmpty() ||
+						split[2].isEmpty()
+						|| split[3].isEmpty() || split[4].isEmpty()) {
+					validationErrors.add("項目が足りない行があります。");
+					continue;
+				}
+				try {
+					Long.parseLong(split[0]);
+				} catch (NumberFormatException e) {
+					e.printStackTrace();
+					validationErrors.add("受注IDが数値ではありません");
+				}
+				try {
+					date1 = dateFormat.parse(split[2]);
+					date2 = dateFormat.parse(split[3]);
+				} catch (ParseException e) {
+					e.printStackTrace();
+					validationErrors.add("日付の形式がyyyy-MM-ddではありません");
+				}
+			}
+		} catch (IOException e) {
+			throw new RuntimeException("ファイルが読み込めません", e);
+		}
+		return validationErrors;
+	}
+
+	// 渡されたorderDeliveriesをOrderDeliveriesテーブルに保存
+	@Transactional
+	public void save(OrderDeliveries orderDeliveries) {
+		Long orderId = orderDeliveries.getOrderId();
+		// 既存のデータがあるか確認
+		OrderDeliveries existingOrderDeliveries = orderDeliveriesRepository.findByOrderId(orderId);
+		if (existingOrderDeliveries != null) {
+			existingOrderDeliveries.setShippingCode(orderDeliveries.getShippingCode());
+			existingOrderDeliveries.setShippingDate(orderDeliveries.getShippingDate());
+			existingOrderDeliveries.setDeliveryDate(orderDeliveries.getDeliveryDate());
+			existingOrderDeliveries.setDeliveryTimezone(orderDeliveries.getDeliveryTimezone());
+			existingOrderDeliveries.setUploadStatus(orderDeliveries.getUploadStatus());
+			orderDeliveriesRepository.save(existingOrderDeliveries);
 		} else {
-			order.setId(Long.valueOf(split[0]));
-			order.setShippingCode(split[1]);
-			order.setShippingDate(LocalDate.parse(split[2]));
-			order.setDeliveryDate(LocalDate.parse(split[3]));
-			order.setDeliveryTimezone(split[4]);
-			order.setStatus("shipping");
-			order.setPaymentStatus(split[6]);
+			// 既存データがない場合はOrderDeliveries をデータベースに新規保存
+			orderDeliveriesRepository.save(orderDeliveries);
 		}
 	}
 
-	private Order createOrderFromCSV(String[] split) {
-		Order order = new Order();
-		order.setId(Long.valueOf(split[0]));
-		order.setShippingCode(split[1]);
-		order.setShippingDate(LocalDate.parse(split[2]));
-		order.setDeliveryDate(LocalDate.parse(split[3]));
-		order.setDeliveryTimezone(split[4]);
-		if ((split[6]).equals("paid")) {
-			order.setStatus("completed");
-		} else {
+	// Ordersテーブルのステータスを更新する
+	@Transactional
+	public void updateOrderStatus(Long orderId) {
+		Optional<Order> optionalOrder = orderRepository.findById(orderId);
+		if (optionalOrder.isPresent()) {
+			Order order = optionalOrder.get();
+			// Ordersテーブルのstatusをshippingに変更
 			order.setStatus("shipping");
+			// Ordersテーブルのpayment_statusがpaidの場合、statusをcompletedに変更
+			if ("paid".equals(order.getPaymentStatus())) {
+				order.setStatus("completed");
+			}
+			orderRepository.save(order);
+		} else {
+			throw new RuntimeException("Order not found with ID: " + orderId);
 		}
-		order.setPaymentStatus(split[6]);
-
-		return order;
-	}
-
-	/**
-	 * 一括更新処理実行
-	 *
-	 * @param orders
-	 */
-	@SuppressWarnings("unused")
-	private int[] batchInsert(List<Order> orders) {
-		String sql = "INSERT INTO orders (id, shipping_code, shipping_date, delivery_date, delivery_timezone, status, payment_status, create_at, update_at) "
-				+
-				"VALUES (:id, :shipping_code, :shipping_date, :delivery_date, :delivery_timezone, :status, :payment_status, :create_at, :update_at)";
-
-		List<MapSqlParameterSource> batchParams = new ArrayList<>();
-
-		for (Order order : orders) {
-			MapSqlParameterSource params = new MapSqlParameterSource()
-					.addValue("id", order.getId())
-					.addValue("shipping_code", order.getShippingCode())
-					.addValue("shipping_date", order.getShippingDate())
-					.addValue("delivery_date", order.getDeliveryDate())
-					.addValue("delivery_timezone", order.getDeliveryTimezone())
-					.addValue("status", order.getStatus())
-					.addValue("payment_status", order.getPaymentStatus())
-					.addValue("create_at", new Date())
-					.addValue("update_at", new Date());
-			batchParams.add(params);
-		}
-		return jdbcTemplate.batchUpdate(sql, batchParams.toArray(new MapSqlParameterSource[0]));
 	}
 
 }

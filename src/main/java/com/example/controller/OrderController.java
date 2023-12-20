@@ -33,11 +33,14 @@ import com.example.enums.OrderStatus;
 import com.example.enums.PaymentMethod;
 import com.example.enums.PaymentStatus;
 import com.example.form.OrderForm;
+import com.example.form.OrderShippingList;
 import com.example.model.Order;
+import com.example.model.OrderDeliveries;
 import com.example.service.OrderService;
 import com.example.service.ProductService;
 
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 @Controller
 @RequestMapping("/orders")
@@ -48,6 +51,16 @@ public class OrderController {
 
 	@Autowired
 	private ProductService productService;
+
+	List<Order> orderShippingData;
+	List<OrderDeliveries> orderDeliveries;
+
+	// @ModelAttribute("orderShippingForm")
+	// public OrderShippingList getOrderShippingForm() {
+	// OrderShippingList form = new OrderShippingList();
+	// // もし初期データが必要な場合はここで設定する
+	// return form;
+	// }
 
 	@GetMapping
 	public String index(Model model) {
@@ -149,11 +162,19 @@ public class OrderController {
 	}
 
 	@GetMapping("/shipping")
-	public String indexOrders(Model model) {
+	public String indexOrders(Model model, RedirectAttributes redirectAttributes,
+			@ModelAttribute OrderShippingList orderShippingList, HttpSession session) {
 		List<Order> all = orderService.findAll();
 		model.addAttribute("listOrder", all);
-		// List<Order> orderShippingData = orderService.findByStatus("ordered");
-		// model.addAttribute("orderShippingData", orderShippingData);
+		model.addAttribute("orderShippingData", orderShippingData);
+		model.addAttribute("orderDeliveries", orderDeliveries);
+		model.addAttribute("orderShippingList", orderShippingList);
+		// セッションからエラーメッセージを取得してモデルに追加
+		List<String> validationErrors = (List<String>)session.getAttribute("validationErrors");
+		if (validationErrors != null && !validationErrors.isEmpty()) {
+			model.addAttribute("validationErrors", validationErrors);
+			session.removeAttribute("validationErrors"); // 不要になったエラーメッセージはセッションから削除
+		}
 		return "order/shipping";
 	}
 
@@ -165,7 +186,9 @@ public class OrderController {
 	 * @return
 	 */
 	@PostMapping("/shipping/upload_file")
-	public String uploadFile(@RequestParam("file") MultipartFile uploadFile, RedirectAttributes redirectAttributes) {
+	public String uploadFile(@RequestParam("file") MultipartFile uploadFile,
+			@ModelAttribute OrderShippingList orderShippingList, BindingResult result,
+			RedirectAttributes redirectAttributes, Model model, HttpSession session) {
 
 		if (uploadFile.isEmpty()) {
 			// ファイルが存在しない場合
@@ -178,16 +201,21 @@ public class OrderController {
 			return "redirect:/orders/shipping";
 		}
 		try {
-			List<Order> orderShippingData = orderService.importCSV(uploadFile);
-			redirectAttributes.addFlashAttribute("orderShippingData", orderShippingData);
-			orderService.importCSV(uploadFile);
+			List<String> validationErrors = orderService.validate(uploadFile);
+
+			if (!validationErrors.isEmpty()) {
+				// バリデーションエラーがあればエラーメッセージをモデルに追加
+				session.setAttribute("validationErrors", validationErrors);
+				return "redirect:/orders/shipping";
+			}
+			// インポートしたCSVの情報をorderDeliveriesへ格納(modelでの追加はshowメソッドにて実装)
+			this.orderDeliveries = orderService.importOrderDeliveriesCSV(uploadFile);
+			return "redirect:/orders/shipping";
 		} catch (Throwable e) {
 			redirectAttributes.addFlashAttribute("error", e.getMessage());
 			e.printStackTrace();
 			return "redirect:/orders/shipping";
 		}
-
-		return "redirect:/orders/shipping";
 	}
 
 	/**
@@ -241,20 +269,68 @@ public class OrderController {
 
 	// データベースをCSVに変換
 	public String convertToCSV(List<Order> orders) {
-		String header = "order_id,shipping_code,shipping_date,delivery_date,delivery_timezone,status,payment_status";
+		String header = "id,customer_id,status,total,tax,discount,shipping,grand_total,paid,payment_method,payment_status,note";
 
 		String data = orders.stream()
 				.map(order -> String.join(",",
 						String.valueOf(order.getId()),
-						String.valueOf(order.getShippingCode()),
-						String.valueOf(order.getShippingDate()),
-						String.valueOf(order.getDeliveryDate()),
-						String.valueOf(order.getDeliveryTimezone()),
+						String.valueOf(order.getCustomerId()),
 						String.valueOf(order.getStatus()),
+						String.valueOf(order.getTotal()),
+						String.valueOf(order.getTax()),
+						String.valueOf(order.getDiscount()),
+						String.valueOf(order.getShipping()),
+						String.valueOf(order.getGrandTotal()),
+						String.valueOf(order.getPaid()),
+						String.valueOf(order.getPaymentMethod()),
 						String.valueOf(order.getPaymentStatus()),
-						String.valueOf(order.getCreateAt()),
-						String.valueOf(order.getUpdateAt())))
+						String.valueOf(order.getNote())))
 				.collect(Collectors.joining("\n"));
 		return header + "\n" + data;
+	}
+
+	// 出荷情報更新ボタン押下時の処理
+	@PutMapping("/shipping")
+	public String updateShipping(@ModelAttribute OrderShippingList orderShippingList, BindingResult result,
+			RedirectAttributes redirectAttributes) {
+		try {
+			boolean isError = false;
+			// チェックボックスがチェックされているか確認
+			for (int i = 0; i < orderShippingList.getOrderShippingList().size(); i++) {
+				OrderShippingList shippingList = orderShippingList.getOrderShippingList().get(i);
+				// チェックされている場合の処理
+				if (shippingList.isChecked()) {
+					// orders テーブルから id に合致するデータを取得
+					Optional<Order> optionalOrder = orderService
+							.findOne(Long.valueOf(orderDeliveries.get(i).getOrderId()));
+					if (optionalOrder.isPresent()) {
+						Order order = optionalOrder.get();
+						if (order.getStatus().equals("completed")) {
+							// ステータスがcompletedの場合
+							orderDeliveries.get(i).setUploadStatus("error");
+							isError = true;
+						} else {
+							// orderDeliveriesのentityをsaveメソッドに渡す(iはチェックされたデータの行数)
+							orderService.save(orderDeliveries.get(i));
+							orderDeliveries.get(i).setUploadStatus("success");
+							// チェックされた受注のorderIdをupdateOrderStatusメソッドに渡す
+							orderService.updateOrderStatus(orderDeliveries.get(i).getOrderId());
+						}
+					} else {
+						// 合致する受注IDがない場合
+						orderDeliveries.get(i).setUploadStatus("error");
+						isError = true;
+					}
+				}
+			}
+			if (isError) {
+				throw new Exception("エラー行があります");
+			}
+			redirectAttributes.addFlashAttribute("success", "出荷情報を一括更新しました。");
+		} catch (Exception e) {
+			redirectAttributes.addFlashAttribute("error", "出荷情報の一括更新中にエラーが発生しました。");
+			e.printStackTrace();
+		}
+		return "redirect:/orders/shipping";
 	}
 }

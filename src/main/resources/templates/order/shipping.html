@@ -28,14 +28,15 @@
   </div>
 
   <!-- CSVの各行のバリデーションチェック後のエラーを表示する -->
-  <div th:if="${validationError}" th:each="error : ${validationError}">
-    <label class="text-danger" th:text="${error}"></label>
+  <div th:if="${validationErrors}">
+    <div th:each="error : ${validationErrors}">
+      <label class="text-danger" th:text="${error}"></label>
+    </div>
   </div>
-
   <!-- CSVの読み込み内容を表示する -->
-  <!-- <div th:if="${orderShippingData}"> -->
-  <!-- チェックを入れたデータのみ出荷済みに更新する -->
-  <!-- <form th:action="@{/orders/shipping}" th:method="'put'" th:object="${orderShippingData}">
+  <div th:if="${orderDeliveries}">
+    <!-- チェックを入れたデータのみ出荷済みに更新する -->
+    <form th:action="@{/orders/shipping}" th:method="'put'" th:object="${orderShippingList}">
       <button type="submit" class="btn btn-success">出荷情報更新</button>
       <table class="table">
         <thead>
@@ -50,7 +51,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr th:each="orderShipping, st : *{orderShippingList}">
+          <tr th:each="orderShipping, st : ${orderDeliveries}">
             <td>
               <input class="row_check" type="checkbox" th:field="*{orderShippingList[__${st.index}__].checked}" />
             </td>
@@ -63,11 +64,11 @@
               <input type="hidden" th:field="*{orderShippingList[__${st.index}__].shippingCode}" />
             </td>
             <td>
-              <th:block th:text="${orderShipping.shippingDate}"></th:block>
+              <th:block th:text="${#dates.format(orderShipping.shippingDate, 'yyyy-MM-dd')}"></th:block>
               <input type="hidden" th:field="*{orderShippingList[__${st.index}__].shippingDate}" />
             </td>
             <td>
-              <th:block th:text="${orderShipping.deliveryDate}"></th:block>
+              <th:block th:text="${#dates.format(orderShipping.deliveryDate, 'yyyy-MM-dd')}"></th:block>
               <input type="hidden" th:field="*{orderShippingList[__${st.index}__].deliveryDate}" />
             </td>
             <td>
@@ -81,8 +82,9 @@
           </tr>
         </tbody>
       </table>
-    </form> -->
-  <!-- </div> -->
+    </form>
+  </div>
+  <!-- ここまでCSVの読み込み内容を表示する -->
   <table class="table">
     <thead>
       <tr>
@@ -101,6 +103,29 @@
         <th>操作</th>
       </tr>
     </thead>
+    <tbody>
+      <tr th:each="order : ${orderShippingData}">
+        <td th:text="${order.customerId}"></td>
+        <td>
+          <th:block th:each="orderProduct : ${order.orderProducts}">
+            <div>
+              <span th:text="${orderProduct.name}"></span> /
+              <span th:text="${orderProduct.quantity}"></span>
+            </div>
+          </th:block>
+        </td>
+        <td th:text="${order.discount}"></td>
+        <td th:text="${order.shipping}"></td>
+        <td th:text="${order.tax}"></td>
+        <td th:text="${order.total}"></td>
+        <td th:text="${order.grandTotal}"></td>
+        <td th:text="${order.getStatusName()}"></td>
+        <td th:text="${order.getPaymentMethodName()}"></td>
+        <td th:text="${order.getPaymentStatusName()}"></td>
+        <td th:text="${order.paid}"></td>
+        <td th:text="${order.note}"></td>
+      </tr>
+    </tbody>
     <tbody>
       <tr th:each="order : ${listOrder}">
         <td th:text="${order.customerId}"></td>
