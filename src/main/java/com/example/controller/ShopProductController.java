@@ -19,14 +19,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.example.constants.Message;
-import com.example.constants.TaxType;
 import com.example.entity.ProductWithCategoryName;
 import com.example.form.ProductForm;
 import com.example.form.ProductSearchForm;
 import com.example.model.Category;
 import com.example.model.Product;
+import com.example.model.Tax;
 import com.example.service.CategoryService;
 import com.example.service.ProductService;
+import com.example.service.TaxService;
 
 @Controller
 @RequestMapping("/shops/{shopId}/products")
@@ -38,6 +39,8 @@ public class ShopProductController {
 	@Autowired
 	private CategoryService categoryService;
 
+	@Autowired
+	private TaxService taxService;
 
 	@GetMapping
 	public String index(Model model, @PathVariable("shopId") Long shopId, @ModelAttribute ProductSearchForm request) {
@@ -54,10 +57,11 @@ public class ShopProductController {
 	public String show(Model model, @PathVariable("shopId") Long shopId, @PathVariable("id") Long id) {
 		if (id != null) {
 			Optional<Product> product = productService.findOne(id);
+			Optional<Tax> tax = taxService.findOne(Long.valueOf(product.get().getTaxType()));
 			List<Category> categories = categoryService.findAll();
 			model.addAttribute("categories", categories);
 			model.addAttribute("product", product.get());
-			model.addAttribute("tax", TaxType.get(product.get().getTaxType()));
+			model.addAttribute("tax", tax);
 			model.addAttribute("shopId", shopId);
 		}
 		return "shop_product/show";
@@ -83,6 +87,25 @@ public class ShopProductController {
 			model.addAttribute("shopId", shopId);
 			return "shop_product/form";
 		}
+
+		// 新規登録時に画面の入力フォームから受け取ったrate, taxIncluded, roundingを比較して、合致するデータベースのidを取得
+		Optional<Tax> matchingTax = taxService.findTaxByRateAndTaxIncludedAndRounding(
+				productForm.getRate(), // 0
+				productForm.getTaxIncluded(), // false
+				productForm.getRounding()); // floor
+
+		System.out.println(matchingTax);
+
+		matchingTax.ifPresent(tax -> {
+			Long taxId = tax.getId();
+			// taxIdを使って必要な処理を行う
+			productForm.setTaxType(taxId);
+		});
+		// matchingTax.ifPresent(tax -> {
+		// // productForm.setTaxType(tax.getId()); // 不要な行
+		// // Product クラスに直接セット
+		// productForm.setTaxType(matchingTax.getId());
+		// });
 
 		Product product = null;
 		try {

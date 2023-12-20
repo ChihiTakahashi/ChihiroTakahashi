@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layout/layout}">
+<th:block layout:fragment="content">
+  <h1>New Tax</h1>
+  <hr />
+  <form th:action="@{/taxes}" th:method="post" th:object="${tax}">
+    <div class="form-group">
+      <label for="tax">Tax</label>
+      <input id="tax" name="tax" type="number" class="form-control" th:field="*{tax}"
+        style='height: 200px; width: max-content;' />
+      <span th:if="${#fields.hasErrors('tax')}" th:errors="*{tax}" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-success">Save</button>
+    <a th:href="@{/taxes}" class="btn btn-default">Back</a>
+
+  </form>
+
+  <link th:href="@{/css/app.css}" type="text/css" rel="stylesheet" />
+</th:block>
+
+</html>

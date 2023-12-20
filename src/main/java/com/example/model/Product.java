@@ -64,7 +64,8 @@ public class Product extends TimeEntity implements Serializable {
 		this.setWeight(form.getWeight());
 		this.setHeight(form.getHeight());
 		this.setPrice(form.getPrice().doubleValue());
-		this.setTaxType(form.getTaxType());
+		Integer TaxType = form.getTaxType().intValue();
+		this.setTaxType(TaxType);
 	}
 
 	@OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

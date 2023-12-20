@@ -1,0 +1,4 @@
+order_id,shipping_code,shipping_date,delivery_date,delivery_timezone,status,payment_status
+1,1,"2023-05-01","2023-05-31","morning","shipped","paid"
+2,1,"2023-05-01","2023-05-31","morning","shipped","paid"
+3,1,"2023-05-01","2023-05-31","morning","shipped","paid"
