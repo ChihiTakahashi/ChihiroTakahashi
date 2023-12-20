@@ -1,7 +1,6 @@
 package com.example.model;
 
 import java.io.Serializable;
-import java.lang.String;
 
 import com.example.constants.TaxType;
 
