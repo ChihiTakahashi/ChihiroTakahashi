@@ -262,24 +262,12 @@ public class OrderService {
 				Date date1 = null;
 				Date date2 = null;
 				OrderDeliveries orderDeliveries = new OrderDeliveries();
-				// CSVの項目が空の場合にエラーとする
-				// if (split.length < 5 || split[0].isEmpty() || split[1].isEmpty() ||
-				// split[2].isEmpty()
-				// || split[3].isEmpty() || split[4].isEmpty()) {
-				// validationErrors.add("CSVの項目が空です。");
-				// continue;
-				// }
-				// try {
 				try {
 					date1 = dateFormat.parse(split[2]);
 					date2 = dateFormat.parse(split[3]);
 				} catch (ParseException e) {
 					e.printStackTrace();
 				}
-				// } catch (NumberFormatException | ParseException e) {
-				// e.printStackTrace();
-				// validationErrors.add("数値または日付の変換エラーが発生しました。");
-				// }
 				orderDeliveries.setOrderId(Long.valueOf(split[0]));
 				orderDeliveries.setShippingCode(split[1]);
 				orderDeliveries.setShippingDate(date1);
@@ -368,111 +356,5 @@ public class OrderService {
 			throw new RuntimeException("Order not found with ID: " + orderId);
 		}
 	}
-
-	// @Transactional
-	// public void batchUpdateShipping(OrderShippingList orderShippingList) {
-	// // 配送情報の一括更新の実装
-	// OrderDeliveries orderDeliveries = new OrderDeliveries();
-
-	// for (OrderShippingList orderShippinglist :
-	// orderShippingList.getOrderShippingList()) {
-	// if (orderShippingList.isChecked()) {
-	// Long orderId = orderShippingList.getOrderId();
-	// // リポジトリからオーダーを取得
-	// Order order = orderRepository.findById(orderId).orElse(null);
-
-	// if (order != null) {
-
-	// // オーダーの配送情報を更新
-	// orderDeliveries.setShippingCode(orderShippingList.getShippingCode());
-	// orderDeliveries.setShippingDate(orderShippingList.getShippingDate());
-	// orderDeliveries.setDeliveryDate(orderShippingList.getDeliveryDate());
-	// orderDeliveries.setDeliveryTimezone(orderShippingList.getDeliveryTimezone());
-
-	// // OrderDeliveriesエンティティを作成して保存
-	// OrderDeliveries orderDeliveries = new OrderDeliveries();
-	// orderDeliveries.setOrderId(orderId);
-	// orderDeliveries.setShippingCode(orderShipping.getShippingCode());
-	// orderDeliveries.setShippingDate(orderShipping.getShippingDate());
-	// orderDeliveries.setDeliveryDate(orderShipping.getDeliveryDate());
-	// orderDeliveries.setDeliveryTimezone(orderShipping.getDeliveryTimezone());
-	// orderDeliveriesRepository.save(orderDeliveries);
-
-	// // オーダーを保存
-	// orderRepository.save(order);
-	// }
-	// }
-	// }
-	// }
-
-	// private void updateOrderFromCSV(Order order, String[] split) {
-	// // データを更新
-	// SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-	// Date date1 = null;
-	// Date date2 = null;
-	// try {
-	// date1 = dateFormat.parse(split[3]);
-	// date2 = dateFormat.parse(split[4]);
-	// } catch (ParseException e) {
-	// e.printStackTrace();
-	// }
-	// OrderDeliveries orderDeliveries = new OrderDeliveries();
-	// orderDeliveries.setId(Long.valueOf(split[0]));
-	// orderDeliveries.setOrderId(Long.valueOf(split[1]));
-	// orderDeliveries.setShippingCode(split[2]);
-	// orderDeliveries.setShippingDate(date1);
-	// orderDeliveries.setDeliveryDate(date2);
-	// orderDeliveries.setDeliveryTimezone(split[5]);
-	// }
-
-	// private Order createOrderFromCSV(String[] split) {
-	// Order order = new Order();
-	// order.setId(Long.valueOf(split[0]));
-	// order.setShippingCode(split[1]);
-	// order.setShippingDate(LocalDate.parse(split[2]));
-	// order.setDeliveryDate(LocalDate.parse(split[3]));
-	// order.setDeliveryTimezone(split[4]);
-	// if ((split[6]).equals("paid")) {
-	// order.setStatus("completed");
-	// } else {
-	// order.setStatus("shipping");
-	// }
-	// order.setPaymentStatus(split[6]);
-
-	// return order;
-	// }
-
-	/**
-	 * 一括更新処理実行
-	 *
-	 * @param orders
-	 */
-	// @SuppressWarnings("unused")
-	// private int[] batchInsert(List<Order> orders) {
-	// String sql = "INSERT INTO orders (id, shipping_code, shipping_date,
-	// delivery_date, delivery_timezone, status, payment_status, create_at,
-	// update_at) "
-	// +
-	// "VALUES (:id, :shipping_code, :shipping_date, :delivery_date,
-	// :delivery_timezone, :status, :payment_status, :create_at, :update_at)";
-
-	// List<MapSqlParameterSource> batchParams = new ArrayList<>();
-
-	// for (Order order : orders) {
-	// MapSqlParameterSource params = new MapSqlParameterSource()
-	// .addValue("id", order.getId())
-	// .addValue("shipping_code", order.getShippingCode())
-	// .addValue("shipping_date", order.getShippingDate())
-	// .addValue("delivery_date", order.getDeliveryDate())
-	// .addValue("delivery_timezone", order.getDeliveryTimezone())
-	// .addValue("status", order.getStatus())
-	// .addValue("payment_status", order.getPaymentStatus())
-	// .addValue("create_at", new Date())
-	// .addValue("update_at", new Date());
-	// batchParams.add(params);
-	// }
-	// return jdbcTemplate.batchUpdate(sql, batchParams.toArray(new
-	// MapSqlParameterSource[0]));
-	// }
 
 }
