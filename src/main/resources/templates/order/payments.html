@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layout/layout}">
+<th:block layout:fragment="content">
+  <h1>受注 一括入金</h1>
+  <hr />
+  <a th:href="@{/orders}" class="btn btn-default">Back</a><br /><br />
+
+  <div class="mb-4">
+    <div class="row">
+      <!-- CSVの読み込み -->
+      <form class="row col-6" th:action="@{/orders/payments/upload_file}" method="post" enctype="multipart/form-data">
+        <div class="input-group">
+          <input class="form-control" type="file" id="file" name="file" accept=".csv" />
+          <button type="submit" class="btn btn-primary">入金データ取込</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- CSVの各行のバリデーションチェック後のエラーを表示する -->
+  <div th:if="${validationErrors}">
+    <div th:each="error : ${validationErrors}">
+      <label class="text-danger" th:text="${error}"></label>
+    </div>
+  </div>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>受注ID</th>
+        <th>該当受注(リンク)</th>
+        <th>金額</th>
+        <th>支払い方法</th>
+        <th>支払い状態</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="order : ${listOrder}">
+        <td th:text="${order.id}"></td>
+        <td>
+          <a th:href="@{'/orders/' + ${order.id}}">
+            <span th:text="'受注ID' + ${order.id}"></span>
+          </a>
+        </td>
+        <td th:text="${order.total}"></td>
+        <td th:text="${order.paymentMethod}"></td>
+        <td th:text="${order.paymentStatus}"></td>
+      </tr>
+    </tbody>
+  </table>
+</th:block>
+
+</html>
+<script src="/js/order/order-shipping.js"></script>

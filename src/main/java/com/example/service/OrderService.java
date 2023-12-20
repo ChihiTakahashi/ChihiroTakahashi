@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -152,16 +153,84 @@ public class OrderService {
 		 */
 		// orderのorderPaymentsに追加
 		order.getOrderPayments().add(payment);
-		// 支払い済み金額を計算
-		var paid = order.getOrderPayments().stream().mapToDouble(p -> p.getPaid()).sum();
+		// 支払い済み金額を計算(OrderPaymentで支払情報が完了のもののみ対象)
+		var paid = order.getOrderPayments().stream()
+				.filter(p -> "完了".equals(p.getType()))
+				.mapToDouble(p -> p.getPaid()).sum();
 		// 合計金額から支払いステータスを判定
 		var paymentStatus = paid > order.getGrandTotal() ? PaymentStatus.OVERPAID
 				: paid < order.getGrandTotal() ? PaymentStatus.PARTIALLY_PAID : PaymentStatus.PAID;
 
 		// 更新
 		order.setPaid(paid);
-		order.setPaymentStatus(paymentStatus);
+		// 支払のtypeが完了の時のみ受注情報の支払いステータスを更新
+		if (entity.getType().equals("完了")) {
+			order.setPaymentStatus(paymentStatus);
+		}
+		// 発送済みかつ入金済みの場合、ordersのstatusをcompletedに更新
+		if (order.getStatus().equals("shipping") && paymentStatus == PaymentStatus.PAID) {
+			order.setStatus("completed");
+		}
+
 		orderRepository.save(order);
+	}
+
+	/**
+	 * 入金用CSVインポート処理
+	 *
+	 * @param file
+	 * @throws IOException
+	 */
+	// インポートしたCSVをOrderForm.CreatePayment型に格納してcreatePaymentメソッドを呼び出す
+	// エラーがある場合はエラーを返す
+	@Transactional
+	public List<String> importPaymentCSV(MultipartFile file) throws IOException {
+		List<String> validationErrors = new ArrayList<>();
+		try (BufferedReader br = new BufferedReader(
+				new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
+			String line = br.readLine(); // 1行目はヘッダーなので読み飛ばす
+			while ((line = br.readLine()) != null) {
+				final String[] split = line.replace("\"", "").split(",");
+				// CSVの項目が空の場合にエラーとする
+				if (split.length < 5 || split[0].isEmpty() || split[1].isEmpty() ||
+						split[2].isEmpty()
+						|| split[3].isEmpty() || split[4].isEmpty()) {
+					validationErrors.add("項目が足りない行があります。");
+					return validationErrors;
+				}
+				// 該当の受注がない場合エラーとする
+				Long orderId = Long.parseLong(split[0]);
+				if (!orderRepository.existsById(orderId)) {
+					validationErrors.add("該当の受注がありません。");
+					return validationErrors;
+				}
+				try {
+					Long.parseLong(split[0]);
+				} catch (NumberFormatException e) {
+					e.printStackTrace();
+					validationErrors.add("受注IDが数値ではありません");
+					return validationErrors;
+				}
+				try {
+					Long.parseLong(split[2]);
+				} catch (NumberFormatException e) {
+					e.printStackTrace();
+					validationErrors.add("金額が数値ではありません");
+					return validationErrors;
+				}
+				// paymentEntityにCSVの情報を格納
+				OrderForm.CreatePayment paymentEntity = new OrderForm.CreatePayment();
+				paymentEntity.setOrderId(Long.valueOf(split[0]));
+				paymentEntity.setType(split[1]);
+				paymentEntity.setPaid(Double.valueOf(split[2]));
+				paymentEntity.setPaidAt(Timestamp.valueOf(split[3]));
+				paymentEntity.setMethod(split[4]);
+				this.createPayment(paymentEntity);
+			}
+			return validationErrors;
+		} catch (IOException e) {
+			throw new RuntimeException("ファイルが読み込めません", e);
+		}
 	}
 
 	public List<Order> findByStatus(String status) {
