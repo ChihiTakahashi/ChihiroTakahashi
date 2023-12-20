@@ -210,8 +210,6 @@ public class OrderController {
 			}
 			// インポートしたCSVの情報をorderDeliveriesへ格納(modelでの追加はshowメソッドにて実装)
 			this.orderDeliveries = orderService.importOrderDeliveriesCSV(uploadFile);
-			System.out.println("おーだーID" + orderDeliveries.get(0).getOrderId());
-			// orderShippingData = orderService.importCSV(uploadFile); 未使用処理
 			return "redirect:/orders/shipping";
 		} catch (Throwable e) {
 			redirectAttributes.addFlashAttribute("error", e.getMessage());
