@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import org.hibernate.service.spi.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +27,9 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.example.constants.Message;
+import com.example.enums.FileImportStatus;
 import com.example.model.Company;
+import com.example.model.FileImportInfo;
 import com.example.model.TransactionAmount;
 import com.example.service.CompanyService;
 import com.example.service.TransactionAmountService;
@@ -197,7 +200,8 @@ public class TransactionAmountController {
 	 * @return
 	 */
 	@PostMapping("/{c_id}/upload_csv")
-	public String uploadCSVFile(@PathVariable("c_id") Long companyId, @RequestParam("csv_file") MultipartFile csvFile,
+	public String uploadCSVFile(@PathVariable("c_id") Long companyId,
+			@RequestParam("csv_file") MultipartFile csvFile,
 			RedirectAttributes redirectAttributes) {
 
 		String redirectUrl = "redirect:/companies/" + companyId;
@@ -212,9 +216,19 @@ public class TransactionAmountController {
 			return redirectUrl;
 		}
 
+		// コールバックメソッドでステータスを取得
+		Consumer<FileImportInfo> callback = updatedImp -> {
+			FileImportStatus status = updatedImp.getStatus();
+			if (status == FileImportStatus.COMPLETE) {
+				redirectAttributes.addFlashAttribute("success", "取込が完了しました");
+			} else if (status == FileImportStatus.ERROR) {
+				redirectAttributes.addFlashAttribute("error", "取り込み中にエラーが発生しました");
+			}
+		};
+
 		// csvファイルのインポート処理
 		try {
-			transactionAmountService.importCSV(csvFile, companyId);
+			transactionAmountService.importCSV(csvFile, companyId, callback);
 		} catch (Throwable t) {
 			redirectAttributes.addFlashAttribute("error", t.getMessage());
 			t.printStackTrace();
