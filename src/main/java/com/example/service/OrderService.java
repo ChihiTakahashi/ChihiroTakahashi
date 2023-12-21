@@ -51,7 +51,7 @@ public class OrderService {
 	}
 
 	public List<Order> findAll() {
-		return orderRepository.findAll();
+		return orderRepository.findAllWithOrderProducts();
 	}
 
 	public Optional<Order> findOne(Long id) {
