@@ -11,6 +11,8 @@ import java.util.function.Consumer;
 import org.hibernate.service.spi.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -71,7 +73,11 @@ public class TransactionAmountController {
 	 */
 	@GetMapping(value = "/{c_id}/new")
 	public String create(Model model, @ModelAttribute TransactionAmount entity,
-			@PathVariable("c_id") Long company_id) {
+			@PathVariable("c_id") Long company_id, Authentication authentication) {
+		boolean isAdmin = transactionAmountService.isAdmin(authentication);
+		if (!isAdmin) {
+			throw new AccessDeniedException("Access Denied");
+		}
 		Optional<Company> companyOpt = companyService.findOne(company_id);
 
 		// 取引先情報が存在する場合、取引金額情報に取引先情報をセットする
@@ -128,7 +134,11 @@ public class TransactionAmountController {
 	 * @return
 	 */
 	@GetMapping("/{id}/edit")
-	public String update(Model model, @PathVariable("id") Long id) {
+	public String update(Model model, @PathVariable("id") Long id, Authentication authentication) {
+		boolean isAdmin = transactionAmountService.isAdmin(authentication);
+		if (!isAdmin) {
+			throw new AccessDeniedException("Access Denied");
+		}
 		try {
 			if (id != null) {
 				Optional<TransactionAmount> tAmountOpt = transactionAmountService.findOne(id);
@@ -178,7 +188,12 @@ public class TransactionAmountController {
 	 * @return
 	 */
 	@DeleteMapping("/{id}")
-	public String delete(@PathVariable("id") Long id, RedirectAttributes redirectAttributes) {
+	public String delete(@PathVariable("id") Long id, RedirectAttributes redirectAttributes,
+			Authentication authentication) {
+		boolean isAdmin = transactionAmountService.isAdmin(authentication);
+		if (!isAdmin) {
+			throw new AccessDeniedException("Access Denied");
+		}
 		try {
 			if (id != null) {
 				Optional<TransactionAmount> tAmountOpt = transactionAmountService.findOne(id);
@@ -202,7 +217,11 @@ public class TransactionAmountController {
 	@PostMapping("/{c_id}/upload_csv")
 	public String uploadCSVFile(@PathVariable("c_id") Long companyId,
 			@RequestParam("csv_file") MultipartFile csvFile,
-			RedirectAttributes redirectAttributes) {
+			RedirectAttributes redirectAttributes, Authentication authentication) {
+		boolean isAdmin = transactionAmountService.isAdmin(authentication);
+		if (!isAdmin) {
+			throw new AccessDeniedException("Access Denied");
+		}
 
 		String redirectUrl = "redirect:/companies/" + companyId;
 		if (csvFile.isEmpty()) {
