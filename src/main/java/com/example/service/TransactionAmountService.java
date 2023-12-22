@@ -9,10 +9,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -206,7 +209,6 @@ public class TransactionAmountService {
 				transactionAmountRepository.save(transactionAmount);
 			}
 			updatedImp.setStatus(FileImportStatus.COMPLETE);
-			updatedImp.setStatus(FileImportStatus.ERROR);
 		} catch (Exception e) {
 			// 失敗の場合、ステータスをエラーにする
 			updatedImp.setStatus(FileImportStatus.ERROR);
@@ -219,6 +221,12 @@ public class TransactionAmountService {
 			fileImportInfoRepository.save(updatedImp);
 			callback.accept(updatedImp);
 		}
+	}
+
+	public boolean isAdmin(Authentication authentication) {
+		Stream<String> userRole = authentication.getAuthorities().stream()
+				.map(GrantedAuthority::getAuthority);
+		return userRole.anyMatch(role -> role.equals("ROLE_ADMIN"));
 	}
 
 }
