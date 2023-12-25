@@ -24,7 +24,6 @@
       <tr>
         <th>名前</th>
         <th>Eメール</th>
-        <th>パスワード</th>
         <th>ロール</th>
         <th>Action</th>
       </tr>
@@ -33,7 +32,6 @@
       <tr th:each="user : ${listUser}">
         <td th:text="${user.name}"></td>
         <td th:text="${user.email}"></td>
-        <td th:text="${user.password}"></td>
         <td th:text="${user.role}"></td>
         <td>
           <a class="btn btn-primary" th:href="@{/users/{id}(id = ${user.id})}">Show</a>
