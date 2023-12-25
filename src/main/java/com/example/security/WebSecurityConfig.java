@@ -7,6 +7,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
@@ -49,18 +51,24 @@ public class WebSecurityConfig {
 
 	@Bean
 	UserDetailsService userDetailsService() {
+		PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(); // 追加
 		UserDetails user = User.builder()
 				.username("user")
-				.password("{noop}password")
+				.password(passwordEncoder.encode("password"))
 				.roles("USER")
 				.build();
 
 		UserDetails admin = User.builder()
 				.username("admin")
-				.password("{noop}password")
+				.password(passwordEncoder.encode("password"))
 				.roles("USER", "ADMIN")
 				.build();
 
 		return new CustomInMemoryUserDetailsManager(user, admin);
+	}
+
+	@Bean
+	public PasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
 	}
 }
