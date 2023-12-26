@@ -42,24 +42,55 @@
 
   </form>
   <script>
-    window.addEventListener('load', function () {
-      const imageFile = document.getElementById('image_file');
-      const image = document.getElementById('image');
-      imageFile.addEventListener('change', function () {
-        const file = imageFile.files[0];
-        const reader = new FileReader();
-        reader.addEventListener('load', function () {
-          image.value = reader.result;
-          const imagePreview = document.createElement('img');
-          imagePreview.id = 'image_preview';
-          imagePreview.src = reader.result;
-          imagePreview.style = "max-width: 200px; max-height: 200px;";
 
-          imageFile.after(imagePreview);
+    // IEの処理
+    if (navigator.userAgent.indexOf('MSIE') !== -1 || navigator.userAgent.indexOf('Trident') !== -1) {
+      window.addEventListener('load', function () {
+        var imageFile = document.getElementById('image_file');
+        var image = document.getElementById('image');
+        imageFile.addEventListener('change', function () {
+          var file = imageFile.files[0];
+
+          if (file) {
+            // URL.createObjectURLを使用して選択されたファイルのBlob URLを作成します
+            var blobUrl = URL.createObjectURL(file);
+
+            // 隠し入力の値をBlob URLに設定します
+            image.value = blobUrl;
+
+            // プレビュー用の画像要素を作成します
+            var imagePreview = document.createElement('img');
+            imagePreview.id = 'image_preview';
+            imagePreview.src = blobUrl;
+            imagePreview.style.width = "200px";
+            imagePreview.style.height = "200px";
+
+            // imageFileの後にプレビュー要素を挿入します
+            imageFile.insertAdjacentHTML('afterEnd', imagePreview.outerHTML);
+          }
         });
-        reader.readAsDataURL(file);
       });
-    });
+    } else {
+      // IE以外の処理
+      window.addEventListener('load', function () {
+        const imageFile = document.getElementById('image_file');
+        const image = document.getElementById('image');
+        imageFile.addEventListener('change', function () {
+          const file = imageFile.files[0];
+          const reader = new FileReader();
+          reader.addEventListener('load', function () {
+            image.value = reader.result;
+            const imagePreview = document.createElement('img');
+            imagePreview.id = 'image_preview';
+            imagePreview.src = reader.result;
+            imagePreview.style = "max-width: 200px; max-height: 200px;";
+
+            imageFile.after(imagePreview);
+          });
+          reader.readAsDataURL(file);
+        });
+      });
+    }
   </script>
   <link th:href="@{/css/app.css}" type="text/css" rel="stylesheet" />
 </th:block>
