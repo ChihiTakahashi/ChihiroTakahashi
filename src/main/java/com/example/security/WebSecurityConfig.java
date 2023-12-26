@@ -42,7 +42,7 @@ public class WebSecurityConfig {
 									new AntPathRequestMatcher(logoutUrl, "POST"),
 									new AntPathRequestMatcher(logoutUrl, "PUT"),
 									new AntPathRequestMatcher(logoutUrl, "DELETE")))
-							.invalidateHttpSession(false)
+							.invalidateHttpSession(true)
 							.clearAuthentication(true);
 					logout.permitAll();
 				});
